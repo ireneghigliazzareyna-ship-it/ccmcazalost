@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablero CCM & Cazalost</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <header class="mb-6 text-center">
+    <h1 class="text-3xl font-bold text-gray-800">Tablero de Control: Cazalost - CCM</h1>
+  </header>
+
+  <!-- Contenedor de 2 columnas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
+    
+    <!-- Columna 1: Cazalost a CCM -->
+    <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-blue-500">
+      <h2 class="text-xl font-bold mb-4 text-blue-600">Derivaciones Cazalost ➔ CCM</h2>
+      <div id="cazalost-list" class="space-y-3">
+        <p class="text-gray-400 italic">Cargando datos...</p>
+      </div>
+    </div>
+
+    <!-- Columna 2: Contestaciones CCM -->
+    <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-green-500">
+      <h2 class="text-xl font-bold mb-4 text-green-600">Respuestas CCM</h2>
+      <div id="ccm-list" class="space-y-3">
+        <p class="text-gray-400 italic">Cargando datos...</p>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
