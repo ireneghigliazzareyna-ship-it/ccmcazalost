@@ -1,0 +1,20 @@
+{
+  "cazalost_ccm": [
+    {
+      "id": "CZ-001",
+      "fecha": "2026-08-05",
+      "titulo": "Ejemplo inicial",
+      "detalle": "Caso derivado desde Cazalost",
+      "estado": "Pendiente"
+    }
+  ],
+  "respuestas_ccm": [
+    {
+      "id": "RESP-001",
+      "id_origen": "CZ-001",
+      "fecha": "2026-08-05",
+      "respuesta": "Respuesta inicial registrada",
+      "estado": "Resuelto"
+    }
+  ]
+}
