@@ -42,7 +42,7 @@
   <script>
     async function cargarDatos() {
       try {
-        // Apuntamos al nuevo archivo v3
+        // Apuntamos al archivo v3
         const res = await fetch('data_v3.json?t=' + new Date().getTime());
         const data = await res.json();
 
@@ -79,24 +79,27 @@
             `;
           } else {
             // Si ya fue analizado, definimos el color (Verde o Rojo) basado en el estatus
-            // Puedes agregar más palabras clave como 'cancelado', 'error', etc.
             const esRojo = statusOrigen.includes('rechazado') || statusOrigen.includes('devuelto');
             const colorClase = esRojo ? 'bg-red-50 border-red-500' : 'bg-green-50 border-green-500';
             const badgeClase = esRojo ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800';
+
+            // Validaciones de Fecha y Monitorista para mayor claridad
+            const fechaResolucion = item.fecha_respuesta_ccm_origen || item.fecha_creacion || 'Fecha no disponible';
+            const monitoristaFinal = item.monitorista_ccm_destino ? item.monitorista_ccm_destino : 'Sin asignar / No registrado';
 
             htmlAnalizados += `
               <div class="p-4 ${colorClase} border-l-4 rounded-md shadow-sm">
                 <div class="flex justify-between items-start mb-2">
                   <div>
                     <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
-                    <span class="text-xs text-gray-500 font-mono">Ticket CCM: ${item.ticket_ccm_origen || 'N/A'}</span>
+                    <span class="text-xs text-gray-500 font-mono">Ticket: ${item.ticket_ccm_origen || 'N/A'} | Fecha: ${fechaResolucion}</span>
                   </div>
                   <span class="inline-block px-2 py-1 text-xs font-bold ${badgeClase} rounded uppercase shadow-sm">
                     ${item.estado_ccm_origen || 'ANALIZADO'}
                   </span>
                 </div>
                 <div class="bg-white p-2 rounded border border-gray-200 text-sm opacity-90">
-                  <p class="text-gray-500 text-xs font-bold uppercase mb-1">Monitorista CCM: <span class="text-blue-600 lowercase">${item.monitorista_ccm_destino || item.auditor_responsable || 'N/A'}</span></p>
+                  <p class="text-gray-500 text-xs font-bold uppercase mb-1">Monitorista CCM: <span class="text-blue-600 lowercase">${monitoristaFinal}</span></p>
                   <p class="text-gray-800 font-medium mb-1">Observación Análisis:</p>
                   <p class="text-gray-600 italic mb-2">"${item.observacion_analisis}"</p>
                   <p class="text-gray-800 font-medium mb-1">Revisión Final:</p>
