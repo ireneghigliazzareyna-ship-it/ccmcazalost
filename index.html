@@ -6,65 +6,117 @@
   <title>Tablero CCM & Cazalost</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-6">
-  <header class="mb-6 text-center">
-    <h1 class="text-3xl font-bold text-gray-800">Tablero de Control: Cazalost - CCM</h1>
+<body class="bg-yellow-50 p-6">
+  
+  <header class="mb-8 text-center bg-yellow-400 py-4 rounded-lg shadow-md border-b-4 border-yellow-500">
+    <h1 class="text-3xl font-black text-gray-800 uppercase tracking-wide">Tablero de Control: Cazalost ➔ CCM</h1>
+    <p class="text-gray-700 font-medium mt-1">Warehouse: MXNL01</p>
   </header>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-7xl mx-auto">
-    <!-- Columna Cazalost -->
-    <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-blue-500">
-      <h2 class="text-xl font-bold mb-4 text-blue-600">Derivaciones Cazalost ➔ CCM</h2>
-      <div id="cazalost-list" class="space-y-3"></div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+    
+    <!-- Columna PENDIENTES -->
+    <div class="bg-white p-5 rounded-lg shadow-lg border-t-8 border-yellow-500">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-yellow-600">Pendientes de Análisis</h2>
+        <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full">CAZA LOST</span>
+      </div>
+      <div id="pendientes-list" class="space-y-4">
+        <!-- Las tarjetas se inyectan aquí -->
+      </div>
     </div>
 
-    <!-- Columna CCM -->
-    <div class="bg-white p-5 rounded-lg shadow-md border-t-4 border-green-500">
-      <h2 class="text-xl font-bold mb-4 text-green-600">Respuestas CCM</h2>
-      <div id="ccm-list" class="space-y-3"></div>
+    <!-- Columna ANALIZADOS -->
+    <div class="bg-white p-5 rounded-lg shadow-lg border-t-8 border-blue-600">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800">Analizados por CCM</h2>
+        <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">CCM</span>
+      </div>
+      <div id="analizados-list" class="space-y-4">
+        <!-- Las tarjetas se inyectan aquí -->
+      </div>
     </div>
+
   </div>
 
   <script>
     async function cargarDatos() {
       try {
-        // Agregamos timestamp para evitar almacenamiento en caché
-        const res = await fetch('data.json?t=' + new Date().getTime());
+        // Apuntamos al nuevo archivo v3
+        const res = await fetch('data_v3.json?t=' + new Date().getTime());
         const data = await res.json();
 
-        // Renderizar columna Cazalost
-        const cazalostContainer = document.getElementById('cazalost-list');
-        cazalostContainer.innerHTML = (data.cazalost_ccm || []).map(item => `
-          <div class="p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <div class="flex justify-between items-center mb-1">
-              <span class="font-bold text-blue-800">${item.id}</span>
-              <span class="text-xs text-gray-500">${item.fecha}</span>
-            </div>
-            <p class="font-medium text-gray-700">${item.titulo || ''}</p>
-            <p class="text-sm text-gray-600">${item.detalle || ''}</p>
-            <span class="inline-block mt-2 px-2 py-0.5 text-xs bg-blue-200 text-blue-800 rounded">${item.estado}</span>
-          </div>
-        `).join('');
+        const pendientesContainer = document.getElementById('pendientes-list');
+        const analizadosContainer = document.getElementById('analizados-list');
+        
+        let htmlPendientes = '';
+        let htmlAnalizados = '';
 
-        // Renderizar columna CCM
-        const ccmContainer = document.getElementById('ccm-list');
-        ccmContainer.innerHTML = (data.respuestas_ccm || []).map(item => `
-          <div class="p-3 bg-green-50 border border-green-200 rounded-md">
-            <div class="flex justify-between items-center mb-1">
-              <span class="font-bold text-green-800">${item.id} (Ref: ${item.id_origen})</span>
-              <span class="text-xs text-gray-500">${item.fecha}</span>
-            </div>
-            <p class="text-sm text-gray-700">${item.respuesta || ''}</p>
-            <span class="inline-block mt-2 px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded">${item.estado}</span>
-          </div>
-        `).join('');
+        data.forEach(item => {
+          // Normalizamos el estatus para evaluarlo fácilmente
+          const statusOrigen = (item.estado_ccm_origen || '').toLowerCase();
+          const statusRevisio = (item.STATUS_REVISAO_ORIGEN || '').toLowerCase();
+          
+          // Lógica de separación: Si está "En espera" o "En análisis", es Pendiente
+          if (statusOrigen === 'en espera' || statusRevisio === 'en análisis') {
+            htmlPendientes += `
+              <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md shadow-sm">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
+                    <span class="text-xs text-gray-500 font-mono">FBM: ${item.FBM_ISSUE_ID} | ${item.fecha_creacion}</span>
+                  </div>
+                  <span class="inline-block px-2 py-1 text-xs font-bold bg-yellow-200 text-yellow-800 rounded uppercase shadow-sm">
+                    ${item.estado_ccm_origen || 'PENDIENTE'}
+                  </span>
+                </div>
+                <p class="text-sm text-gray-800 font-semibold mb-2 line-clamp-1" title="${item.ITEM_TITLE}">${item.ITEM_TITLE}</p>
+                <div class="bg-white p-2 rounded border border-yellow-200 text-sm">
+                  <p class="text-gray-500 text-xs font-bold uppercase mb-1">Auditor: <span class="text-blue-600 lowercase">${item.auditor_responsable || 'No asignado'}</span></p>
+                  <p class="text-gray-700 italic">"${item.comentario_auditor || 'Sin comentario de auditoría'}"</p>
+                </div>
+              </div>
+            `;
+          } else {
+            // Si ya fue analizado, definimos el color (Verde o Rojo) basado en el estatus
+            // Puedes agregar más palabras clave como 'cancelado', 'error', etc.
+            const esRojo = statusOrigen.includes('rechazado') || statusOrigen.includes('devuelto');
+            const colorClase = esRojo ? 'bg-red-50 border-red-500' : 'bg-green-50 border-green-500';
+            const badgeClase = esRojo ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800';
+
+            htmlAnalizados += `
+              <div class="p-4 ${colorClase} border-l-4 rounded-md shadow-sm">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
+                    <span class="text-xs text-gray-500 font-mono">Ticket CCM: ${item.ticket_ccm_origen || 'N/A'}</span>
+                  </div>
+                  <span class="inline-block px-2 py-1 text-xs font-bold ${badgeClase} rounded uppercase shadow-sm">
+                    ${item.estado_ccm_origen || 'ANALIZADO'}
+                  </span>
+                </div>
+                <div class="bg-white p-2 rounded border border-gray-200 text-sm opacity-90">
+                  <p class="text-gray-500 text-xs font-bold uppercase mb-1">Monitorista CCM: <span class="text-blue-600 lowercase">${item.monitorista_ccm_destino || item.auditor_responsable || 'N/A'}</span></p>
+                  <p class="text-gray-800 font-medium mb-1">Observación Análisis:</p>
+                  <p class="text-gray-600 italic mb-2">"${item.observacion_analisis}"</p>
+                  <p class="text-gray-800 font-medium mb-1">Revisión Final:</p>
+                  <p class="text-gray-600 italic">"${item.observacion_revision}"</p>
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        // Inyectar el HTML si hay datos, o mostrar mensaje vacío
+        pendientesContainer.innerHTML = htmlPendientes || '<p class="text-gray-500 italic text-center p-4">No hay tareas pendientes en este momento.</p>';
+        analizadosContainer.innerHTML = htmlAnalizados || '<p class="text-gray-500 italic text-center p-4">Aún no hay análisis completados.</p>';
 
       } catch (error) {
-        console.error("Error al cargar data.json:", error);
+        console.error("Error al cargar data_v3.json:", error);
       }
     }
 
-    // Cargar datos al iniciar y consultar actualizaciones cada 10 segundos
+    // Cargar la primera vez y refrescar cada 10 segundos
     cargarDatos();
     setInterval(cargarDatos, 10000);
   </script>
