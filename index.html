@@ -8,10 +8,37 @@
 </head>
 <body class="bg-yellow-50 p-6">
   
-  <header class="mb-8 text-center bg-yellow-400 py-4 rounded-lg shadow-md border-b-4 border-yellow-500">
+  <header class="mb-6 text-center bg-yellow-400 py-4 rounded-lg shadow-md border-b-4 border-yellow-500">
     <h1 class="text-3xl font-black text-gray-800 uppercase tracking-wide">Tablero de Control: Cazalost ➔ CCM</h1>
     <p class="text-gray-700 font-medium mt-1">Warehouse: MXNL01</p>
   </header>
+
+  <!-- SECCIÓN DE FILTROS -->
+  <div class="max-w-7xl mx-auto mb-8 bg-white p-4 rounded-lg shadow-md border border-gray-200 flex flex-wrap gap-4 justify-center items-end">
+    
+    <div class="flex flex-col gap-1 w-full md:w-auto">
+      <label class="font-bold text-gray-700 uppercase text-xs">Fecha de Creación:</label>
+      <select id="filtro-fecha" class="p-2 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full md:w-48 font-medium text-gray-700 text-sm">
+        <option value="">Todas las fechas</option>
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1 w-full md:w-auto">
+      <label class="font-bold text-gray-700 uppercase text-xs">Auditor:</label>
+      <select id="filtro-auditor" class="p-2 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full md:w-56 font-medium text-gray-700 text-sm">
+        <option value="">Todos los auditores</option>
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1 w-full md:w-auto">
+      <label class="font-bold text-gray-700 uppercase text-xs">Buscar ID Meli / FBM:</label>
+      <input type="text" id="filtro-meli" placeholder="Ej. MELI123..." class="p-2 border border-gray-300 rounded bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full md:w-48 font-medium text-gray-700 text-sm">
+    </div>
+    
+    <button onclick="limpiarFiltros()" class="px-4 py-2 h-[38px] bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded transition-colors text-sm uppercase">
+      Limpiar
+    </button>
+  </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-7xl mx-auto">
     
@@ -21,7 +48,7 @@
         <h2 class="text-2xl font-bold text-yellow-600">Pendientes de Análisis</h2>
         <span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full">CAZA LOST</span>
       </div>
-      <div id="pendientes-list" class="space-y-4">
+      <div id="pendientes-list" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
         <!-- Las tarjetas se inyectan aquí -->
       </div>
     </div>
@@ -32,7 +59,7 @@
         <h2 class="text-2xl font-bold text-gray-800">Analizados por CCM</h2>
         <span class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full">CCM</span>
       </div>
-      <div id="analizados-list" class="space-y-4">
+      <div id="analizados-list" class="space-y-4 max-h-[800px] overflow-y-auto pr-2">
         <!-- Las tarjetas se inyectan aquí -->
       </div>
     </div>
@@ -40,86 +67,148 @@
   </div>
 
   <script>
+    let globalData = []; 
+
     async function cargarDatos() {
       try {
-        // Apuntamos al archivo v3
         const res = await fetch('data_v3.json?t=' + new Date().getTime());
-        const data = await res.json();
-
-        const pendientesContainer = document.getElementById('pendientes-list');
-        const analizadosContainer = document.getElementById('analizados-list');
+        globalData = await res.json();
         
-        let htmlPendientes = '';
-        let htmlAnalizados = '';
-
-        data.forEach(item => {
-          // Normalizamos el estatus para evaluarlo fácilmente
-          const statusOrigen = (item.estado_ccm_origen || '').toLowerCase();
-          const statusRevisio = (item.STATUS_REVISAO_ORIGEN || '').toLowerCase();
-          
-          // Lógica de separación: Si está "En espera" o "En análisis", es Pendiente
-          if (statusOrigen === 'en espera' || statusRevisio === 'en análisis') {
-            htmlPendientes += `
-              <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md shadow-sm">
-                <div class="flex justify-between items-start mb-2">
-                  <div>
-                    <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
-                    <span class="text-xs text-gray-500 font-mono">FBM: ${item.FBM_ISSUE_ID} | ${item.fecha_creacion}</span>
-                  </div>
-                  <span class="inline-block px-2 py-1 text-xs font-bold bg-yellow-200 text-yellow-800 rounded uppercase shadow-sm">
-                    ${item.estado_ccm_origen || 'PENDIENTE'}
-                  </span>
-                </div>
-                <p class="text-sm text-gray-800 font-semibold mb-2 line-clamp-1" title="${item.ITEM_TITLE}">${item.ITEM_TITLE}</p>
-                <div class="bg-white p-2 rounded border border-yellow-200 text-sm">
-                  <p class="text-gray-500 text-xs font-bold uppercase mb-1">Auditor: <span class="text-blue-600 lowercase">${item.auditor_responsable || 'No asignado'}</span></p>
-                  <p class="text-gray-700 italic">"${item.comentario_auditor || 'Sin comentario de auditoría'}"</p>
-                </div>
-              </div>
-            `;
-          } else {
-            // Si ya fue analizado, definimos el color (Verde o Rojo) basado en el estatus
-            const esRojo = statusOrigen.includes('rechazado') || statusOrigen.includes('devuelto');
-            const colorClase = esRojo ? 'bg-red-50 border-red-500' : 'bg-green-50 border-green-500';
-            const badgeClase = esRojo ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800';
-
-            // Validaciones de Fecha y Monitorista para mayor claridad
-            const fechaResolucion = item.fecha_respuesta_ccm_origen || item.fecha_creacion || 'Fecha no disponible';
-            const monitoristaFinal = item.monitorista_ccm_destino ? item.monitorista_ccm_destino : 'Sin asignar / No registrado';
-
-            htmlAnalizados += `
-              <div class="p-4 ${colorClase} border-l-4 rounded-md shadow-sm">
-                <div class="flex justify-between items-start mb-2">
-                  <div>
-                    <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
-                    <span class="text-xs text-gray-500 font-mono">Ticket: ${item.ticket_ccm_origen || 'N/A'} | Fecha: ${fechaResolucion}</span>
-                  </div>
-                  <span class="inline-block px-2 py-1 text-xs font-bold ${badgeClase} rounded uppercase shadow-sm">
-                    ${item.estado_ccm_origen || 'ANALIZADO'}
-                  </span>
-                </div>
-                <div class="bg-white p-2 rounded border border-gray-200 text-sm opacity-90">
-                  <p class="text-gray-500 text-xs font-bold uppercase mb-1">Monitorista CCM: <span class="text-blue-600 lowercase">${monitoristaFinal}</span></p>
-                  <p class="text-gray-800 font-medium mb-1">Observación Análisis:</p>
-                  <p class="text-gray-600 italic mb-2">"${item.observacion_analisis}"</p>
-                  <p class="text-gray-800 font-medium mb-1">Revisión Final:</p>
-                  <p class="text-gray-600 italic">"${item.observacion_revision}"</p>
-                </div>
-              </div>
-            `;
-          }
-        });
-
-        // Inyectar el HTML si hay datos, o mostrar mensaje vacío
-        pendientesContainer.innerHTML = htmlPendientes || '<p class="text-gray-500 italic text-center p-4">No hay tareas pendientes en este momento.</p>';
-        analizadosContainer.innerHTML = htmlAnalizados || '<p class="text-gray-500 italic text-center p-4">Aún no hay análisis completados.</p>';
+        actualizarFiltrosDinamicos();
+        renderizarTablero();
 
       } catch (error) {
         console.error("Error al cargar data_v3.json:", error);
       }
     }
 
-    // Cargar la primera vez y refrescar cada 10 segundos
+    function actualizarFiltrosDinamicos() {
+      // --- Filtro de Auditores ---
+      const selectAuditor = document.getElementById('filtro-auditor');
+      const valorAuditor = selectAuditor.value;
+      
+      const auditores = [...new Set(globalData.map(item => item.auditor_responsable).filter(Boolean))].sort();
+      let htmlAuditores = '<option value="">Todos los auditores</option>';
+      auditores.forEach(auditor => {
+        const selected = auditor === valorAuditor ? 'selected' : '';
+        htmlAuditores += `<option value="${auditor}" ${selected}>${auditor}</option>`;
+      });
+      selectAuditor.innerHTML = htmlAuditores;
+
+      // --- Filtro de Fechas ---
+      const selectFecha = document.getElementById('filtro-fecha');
+      const valorFecha = selectFecha.value;
+      
+      // Extraemos solo los primeros 10 caracteres (YYYY-MM-DD) y quitamos duplicados
+      const fechas = [...new Set(globalData.map(item => {
+        if (!item.fecha_creacion) return null;
+        return item.fecha_creacion.substring(0, 10);
+      }).filter(Boolean))].sort((a, b) => b.localeCompare(a)); // Ordenamos de más reciente a más antigua
+      
+      let htmlFechas = '<option value="">Todas las fechas</option>';
+      fechas.forEach(fecha => {
+        const selected = fecha === valorFecha ? 'selected' : '';
+        htmlFechas += `<option value="${fecha}" ${selected}>${fecha}</option>`;
+      });
+      selectFecha.innerHTML = htmlFechas;
+    }
+
+    function limpiarFiltros() {
+      document.getElementById('filtro-auditor').value = '';
+      document.getElementById('filtro-fecha').value = '';
+      document.getElementById('filtro-meli').value = '';
+      renderizarTablero();
+    }
+
+    function renderizarTablero() {
+      const filtroAuditor = document.getElementById('filtro-auditor').value;
+      const filtroFecha = document.getElementById('filtro-fecha').value;
+      const filtroMeli = document.getElementById('filtro-meli').value.toLowerCase().trim();
+
+      const pendientesContainer = document.getElementById('pendientes-list');
+      const analizadosContainer = document.getElementById('analizados-list');
+      
+      let htmlPendientes = '';
+      let htmlAnalizados = '';
+
+      globalData.forEach(item => {
+        // --- APLICAR FILTROS ---
+        if (filtroAuditor && item.auditor_responsable !== filtroAuditor) return;
+        if (filtroFecha && !(item.fecha_creacion || '').startsWith(filtroFecha)) return;
+        
+        // Filtro manual para el input de texto (Busca en INVENTORY_ID o FBM_ISSUE_ID)
+        if (filtroMeli) {
+          const matchInventario = (item.INVENTORY_ID || '').toLowerCase().includes(filtroMeli);
+          const matchFBM = (item.FBM_ISSUE_ID || '').toLowerCase().includes(filtroMeli);
+          if (!matchInventario && !matchFBM) return;
+        }
+
+        // Normalizamos el estatus para evaluarlo fácilmente
+        const statusOrigen = (item.estado_ccm_origen || '').toLowerCase();
+        const statusRevisio = (item.STATUS_REVISAO_ORIGEN || '').toLowerCase();
+        
+        // Lógica de separación: Si está "En espera" o "En análisis", es Pendiente
+        if (statusOrigen === 'en espera' || statusRevisio === 'en análisis') {
+          htmlPendientes += `
+            <div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-md shadow-sm">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
+                  <span class="text-xs text-gray-500 font-mono">FBM: ${item.FBM_ISSUE_ID} | ${item.fecha_creacion}</span>
+                </div>
+                <span class="inline-block px-2 py-1 text-xs font-bold bg-yellow-200 text-yellow-800 rounded uppercase shadow-sm">
+                  ${item.estado_ccm_origen || 'PENDIENTE'}
+                </span>
+              </div>
+              <p class="text-sm text-gray-800 font-semibold mb-2 line-clamp-1" title="${item.ITEM_TITLE}">${item.ITEM_TITLE}</p>
+              <div class="bg-white p-2 rounded border border-yellow-200 text-sm">
+                <p class="text-gray-500 text-xs font-bold uppercase mb-1">Auditor: <span class="text-blue-600 lowercase">${item.auditor_responsable || 'No asignado'}</span></p>
+                <p class="text-gray-700 italic">"${item.comentario_auditor || 'Sin comentario de auditoría'}"</p>
+              </div>
+            </div>
+          `;
+        } else {
+          // Si ya fue analizado, definimos el color (Verde o Rojo) basado en el estatus
+          const esRojo = statusOrigen.includes('rechazado') || statusOrigen.includes('devuelto');
+          const colorClase = esRojo ? 'bg-red-50 border-red-500' : 'bg-green-50 border-green-500';
+          const badgeClase = esRojo ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800';
+
+          const fechaResolucion = item.fecha_respuesta_ccm_origen || item.fecha_creacion || 'Fecha no disponible';
+          const monitoristaFinal = item.monitorista_ccm_destino ? item.monitorista_ccm_destino : 'Sin asignar / No registrado';
+
+          htmlAnalizados += `
+            <div class="p-4 ${colorClase} border-l-4 rounded-md shadow-sm">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <span class="font-black text-gray-800 block text-lg">${item.INVENTORY_ID}</span>
+                  <span class="text-xs text-gray-500 font-mono">Ticket: ${item.ticket_ccm_origen || 'N/A'} | Fecha: ${fechaResolucion}</span>
+                </div>
+                <span class="inline-block px-2 py-1 text-xs font-bold ${badgeClase} rounded uppercase shadow-sm">
+                  ${item.estado_ccm_origen || 'ANALIZADO'}
+                </span>
+              </div>
+              <div class="bg-white p-2 rounded border border-gray-200 text-sm opacity-90">
+                <p class="text-gray-500 text-xs font-bold uppercase mb-1">Monitorista CCM: <span class="text-blue-600 lowercase">${monitoristaFinal}</span></p>
+                <p class="text-gray-800 font-medium mb-1">Observación Análisis:</p>
+                <p class="text-gray-600 italic mb-2">"${item.observacion_analisis}"</p>
+                <p class="text-gray-800 font-medium mb-1">Revisión Final:</p>
+                <p class="text-gray-600 italic">"${item.observacion_revision}"</p>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      pendientesContainer.innerHTML = htmlPendientes || '<p class="text-gray-500 italic text-center p-4">No hay resultados pendientes que coincidan con los filtros.</p>';
+      analizadosContainer.innerHTML = htmlAnalizados || '<p class="text-gray-500 italic text-center p-4">No hay resultados analizados que coincidan con los filtros.</p>';
+    }
+
+    // Eventos para actualizar la vista en tiempo real cuando usas los filtros
+    document.getElementById('filtro-auditor').addEventListener('change', renderizarTablero);
+    document.getElementById('filtro-fecha').addEventListener('change', renderizarTablero);
+    document.getElementById('filtro-meli').addEventListener('input', renderizarTablero);
+
+    // Cargar la primera vez y refrescar los datos de fondo cada 10 segundos
     cargarDatos();
     setInterval(cargarDatos, 10000);
   </script>
